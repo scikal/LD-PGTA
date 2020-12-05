@@ -105,7 +105,7 @@ def build_confidence_dict(criterias, num_of_buckets, work_dir):
     for filename in filenames:
         LLR_dict, info = load_llr(filename)
         subinfo = {x: info.get(x,None) for x in criterias.keys()}
-        ###print(subinfo)
+        ### print(subinfo)
         if criterias==subinfo:
             if (info.get('scenario',None)=='BPH' and info.get('recombination_spot',None)==1.00) or info.get('scenario',None)=='SPH':
                 scenario = 'SPH'
@@ -360,9 +360,72 @@ if __name__ == "__main__":
           'max_reads': 8,
           'minimal_score': 2,
           'min_HF': 0.05}
+    
+    C14 = {'chr_id': 'chr21',
+         'depth': 0.01,
+         'read_length': 75,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C15 = {'chr_id': 'chr21',
+         'depth': 0.02,
+         'read_length': 75,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C16 = {'chr_id': 'chr21',
+         'depth': 0.05,
+         'read_length': 75,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+
+    C17 = {'chr_id': 'chr21',
+         'depth': 0.01,
+         'read_length': 250,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 4,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+
+    C18 = {'chr_id': 'chr21',
+         'depth': 0.02,
+         'read_length': 250,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 6,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+
+    C19 = {'chr_id': 'chr21',
+         'depth': 0.05,
+         'read_length': 250,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
         
+    C20 = {'chr_id': 'chr21',
+         'depth': 0.1,
+         'read_length': 250,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 12,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
     Z = [i/300 for i in range(-1200,1200)]
-    R = build_ROC_curve(criterias = C13, positive = 'both', thresholds = Z, num_of_buckets = 10, work_dir = 'results_EAS/')
+    R = build_ROC_curve(criterias = C19, positive = 'both', thresholds = Z, num_of_buckets = 10, work_dir = 'results_EUR/')
     plot_ROC_curve(R, num_of_buckets = 10)
 else:
     print("The module ROC_curve was imported.")
