@@ -424,8 +424,131 @@ if __name__ == "__main__":
          'minimal_score': 2,
          'min_HF': 0.05}
     
+    C21 = {'chr_id': 'chr21',
+         'depth': 0.5,
+         'read_length': 250,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 14,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    ##############################
+    # FOR MULTI_ETHNIC REF PANEL #
+    ##############################
+    
+    C22 = {'chr_id': 'chr21',
+         'depth': 0.05,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C23 = {'chr_id': 'chr21',
+         'depth': 0.05,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 6,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+        
+    C24 = {'chr_id': 'chr21',
+         'depth': 0.1,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 6,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+        
+    
+    C25 = {'chr_id': 'chr21',
+         'depth': 0.1,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C26 = {'chr_id': 'chr21',
+         'depth': 0.1,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 12,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C27 = {'chr_id': 'chr21',
+         'depth': 0.25,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 8,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C28 = {'chr_id': 'chr21',
+         'depth': 0.25,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 6,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C29 = {'chr_id': 'chr21',
+         'depth': 0.02,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 4,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+        
+    C30 = {'chr_id': 'chr21',
+         'depth': 0.02,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 3,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C31 = {'chr_id': 'chr21',
+         'depth': 0.01,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 4,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+        
+    C32 = {'chr_id': 'chr21',
+         'depth': 0.01,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 3,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+    
+    C30 = {'chr_id': 'chr21',
+         'depth': 0.02,
+         'read_length': 35,
+         'window_size': 0,
+         'min_reads': 3,
+         'max_reads': 5,
+         'minimal_score': 2,
+         'min_HF': 0.05}
+
+    
     Z = [i/300 for i in range(-1200,1200)]
-    R = build_ROC_curve(criterias = C19, positive = 'both', thresholds = Z, num_of_buckets = 10, work_dir = 'results_EUR/')
+    R = build_ROC_curve(criterias = C29, positive = 'both', thresholds = Z, num_of_buckets = 10, work_dir = 'results_COMMON/')
     plot_ROC_curve(R, num_of_buckets = 10)
 else:
     print("The module ROC_curve was imported.")
