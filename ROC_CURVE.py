@@ -126,13 +126,13 @@ def build_ROC_curve(criterias, positive, thresholds, num_of_buckets, work_dir):
             
     return result
 
-def plot_single_case(LLR_dict,info,N,**kwargs):
+def plot_single_case(info,N,**kwargs):
     """ Plots the mean LLR vs. chromosomal position """
     import matplotlib.pyplot as plt
     save = kwargs.get('save', '')
     
     # Create lists for the plot    
-    X,Y,E = confidence(LLR_dict,info,N,z=1)
+    X,Y,E = confidence(info,N,z=1)
     C = [(x[1]+x[0])/2 for x in X]
     widths = [x[1]-x[0] for x in X]
     #X_boundaries = tuple(k for j in range(N+1) for k in (K[j*a][0], K[min((j+1)*a,len(K)-1)][-1]))

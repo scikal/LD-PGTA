@@ -125,8 +125,14 @@ if __name__ == "__main__":
                 #{'filename': '13948FA-C7R7Y_30.bam', 'sp': 'EUR', 'chr_num': [*range(1,23)] },
                 {'filename': '13935FA-C7R7Y_35.bam', 'sp': 'EUR', 'chr_num': [*range(1,23)] }]
     db_TEST3 = [{'filename': '12789FA-AWL1L_7.bam', 'sp': 'AMR', 'chr_num': [*range(1,23)]}]
-    
-    for case in db_TEST3:
+    db_TEST4 = [{'filename': '10534FA-AFFRU_23.bam', 'sp': 'AMR', 'chr_num': [*range(1,23)] },
+                {'filename': '10568FA-AFFAN_4.bam', 'sp': 'AMR', 'chr_num': [*range(1,23)] },
+                {'filename': '10846FA-AFPAB_2.bam', 'sp': 'EAS', 'chr_num': [*range(1,23)] },
+                {'filename': '13782FA-C6KKV_20.bam', 'sp': 'SAS', 'chr_num': [*range(1,23)] },
+                {'filename': '10967FA-AJ470_F6.bam', 'sp': 'EAS', 'chr_num': [*range(1,23)] }]
+
+
+    for case in db_TEST4:
         bam_filename = case['filename']
         sp = case['sp']
         for chr_num in case['chr_num']:
