@@ -126,6 +126,8 @@ def triple_plot(info,N,**kwargs):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     #from scipy.interpolate import interp1d
+    
+    save = kwargs.get('save', '')
     pairs = {('BPH','DIPLOID'):'saddlebrown', ('DIPLOID','SPH'):'darkgreen', ('SPH','MONOSOMY'):'lightskyblue'}
     
     fig,(ax1)=plt.subplots(1,1)
@@ -139,7 +141,7 @@ def triple_plot(info,N,**kwargs):
 
     ax1.set_ylabel('Log-likelihood ratio')
     ax1.set_xlabel('Normalized chromosome position')
-    
+    ax1.set_title(info['chr_id'])
     #Replace ticks along the x-axis 
     X_ticks = [X[0][0]]+[i[1] for i in X[:-1] for j in (1,2)]+[X[-1][1]]
     X_labels = [('%.2f' % (j/chr_length(info['chr_id']))) for j in X_ticks] 
@@ -157,10 +159,24 @@ def triple_plot(info,N,**kwargs):
     
     ax1.legend(labels, loc='upper right',numpoints=1)
     
-    plt.tight_layout()
-    plt.show()
+    if save!='':
+        print('Saving plot...')
+        ax1.set_title(save.rpartition('/')[-1].removesuffix('.png'))
+        plt.savefig(save, dpi=150, facecolor='w',
+                    edgecolor='w', orientation='landscape',
+                    format='png', transparent=False, bbox_inches='tight',
+                    pad_inches=0.1, metadata=None)
+        plt.close(fig)
+    else:
+       plt.tight_layout()
+       plt.show()
+    
 
 if __name__ == "__main__":
-    likelihoods, info = load_llr('/home/ariad/Dropbox/postdoc_JHU/origin_ecosystem/origin_V2/results_ZOUVES/10534FA-AFFRU_23.chr15.LLR.p')
-    #bar_plot(info,('BPH','SPH'),N=10)
+    #for i in range(1,23):
+    #    likelihoods, info = load_llr(f'/home/ariad/Dropbox/postdoc_JHU/origin_ecosystem/origin_V2/results_ZOUVES/13782FA-C6KKV_20.chr{i:d}.LLR.p')
+    #    #bar_plot(info,('BPH','SPH'),N=10)
+    #    triple_plot(info,N=10,save=f'/home/ariad/Dropbox/postdoc_JHU/origin_ecosystem/origin_V2/results_ZOUVES/13782FA-C6KKV_20.chr{i:d}.png')
+    
+    likelihoods, info = load_llr(f'/home/ariad/Dropbox/postdoc_JHU/origin_ecosystem/origin_V2/results_ZOUVES/13782FA-C6KKV_20.chr7.LLR.p')
     triple_plot(info,N=10)

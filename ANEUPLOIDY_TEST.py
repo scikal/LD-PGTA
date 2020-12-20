@@ -56,8 +56,17 @@ def summarize(M,V):
     return result
 
 def LLR(y,x):
-    """ Calculates the logarithm of y over x. """
-    result = 1.23456789 if x<1e-18 else log(y/x) 
+    """ Calculates the logarithm of y over x and deals with edge cases. """
+    if x and y:
+        result = log(y/x)
+    elif x and not y:
+        result = -1.23456789 
+    elif not x and y:
+        result = +1.23456789 
+    elif not x and not y:
+        result = 0 
+    else:
+        result = None    
     return result
 
 def bools2int(x):
