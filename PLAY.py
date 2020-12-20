@@ -128,7 +128,7 @@ def triple_plot(info,N,**kwargs):
     #from scipy.interpolate import interp1d
     
     save = kwargs.get('save', '')
-    pairs = {('BPH','DIPLOID'):'saddlebrown', ('DIPLOID','SPH'):'darkgreen', ('SPH','MONOSOMY'):'lightskyblue'}
+    pairs = {('BPH','DISOMY'):'saddlebrown', ('DISOMY','SPH'):'darkgreen', ('SPH','MONOSOMY'):'lightskyblue'}
     
     fig,(ax1)=plt.subplots(1,1)
     fig.set_size_inches(9, 6, forward=True)    

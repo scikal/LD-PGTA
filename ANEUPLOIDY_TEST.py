@@ -169,8 +169,8 @@ def statistics(likelihoods,windows_dict):
     num_of_windows = len(likelihoods)
     
     
-    pairs = (('BPH','SPH'), ('BPH','DIPLOID'), ('DIPLOID','SPH'), ('SPH','MONOSOMY')); _ = {};
-    LLRs_per_genomic_window = {(i,j): {window:  mean_and_var([*starmap(LLR, ((_[i], _[j]) for _['MONOSOMY'], _['DIPLOID'], _['SPH'], _['BPH'] in L))])
+    pairs = (('BPH','SPH'), ('BPH','DISOMY'), ('DISOMY','SPH'), ('SPH','MONOSOMY')); _ = {};
+    LLRs_per_genomic_window = {(i,j): {window:  mean_and_var([*starmap(LLR, ((_[i], _[j]) for _['MONOSOMY'], _['DISOMY'], _['SPH'], _['BPH'] in L))])
                        for window,L in likelihoods.items()} for i,j in pairs}
     
     LLRs_per_chromosome = {pair: summarize(*zip(*stat.values())) for pair,stat in LLRs_per_genomic_window.items()}
