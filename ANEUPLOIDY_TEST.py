@@ -71,7 +71,7 @@ def LLR(y,x):
 
 def bools2int(x):
         """ Transforms a tuple/list of bools to a int. """
-        return int(''.join('%d'%i for i in x),2)
+        return int(''.join('1' if x else '0' for i in x),2)
     
 def build_reads_dict(obs_tab,leg_tab):
     """ Returns a dictionary that lists read IDs of reads that overlap with
@@ -226,7 +226,7 @@ def aneuploidy_test(obs_filename,leg_filename,hap_filename,window_size,subsample
     
     filename = inspect.getframeinfo(inspect.currentframe()).filename
     path = os.path.dirname(os.path.abspath(filename))
-    model = kwargs.get('model', path + '/MODELS/' + ('MODELS18.p' if max_reads>16 else 'MODELS16.p'))
+    model = kwargs.get('model', path + '/MODELS/' + ('MODELS18.p' if max_reads>16 else ('MODELS16.p' if max_reads>12 else 'MODELS12.p')))
     get_likelihoods = wrapper_func_of_create_likelihoods(obs_tab, leg_tab, hap_tab, model)
     
     likelihoods = {}
