@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-LIKELIHOODS_CALCULATOR
+LIKELIHOODS_CALCULATOR_ADMIXED
 
-Given a reads that originated form the same genomic window, the likelihood of 
-a four scenarios, namely, monosomy, disomy, SPH and BPH is calculated.
+Given reads that originated form the same genomic window and a reference panel
+of two populations, the likelihood of observed reads under four scenarios,
+namely, monosomy, disomy, SPH and BPH is calculated.
 
 BPH (Both Parental Homologs) correspond to the presence of three unmatched
 haplotypes, while SPH (Single Parental Homolog) correspond to chromosome gains
@@ -29,17 +30,20 @@ except ModuleNotFoundError:
         """ Counts non-zero bits in positive integer. """
         return bin(x).count('1')
 
-class examine:
+class examine_admixed:
     """ Based on two IMPUTE2 arrays, which contain the legend and haplotypes,
     and a dictionary with statisitcal models (models_dict), it allows to
     calculate the likelihoods of observed alleles under various statistical
     models (monosomy, disomy, SPH and BPH). """
    
     
-    def __init__(self, obs_tab, leg_tab, hap_tab, sam_tab, models_dict):
+    def __init__(self, obs_tab, leg_tab, hap_tab, sam_tab, models_dict, total_number_of_haplotypes):
         """ Initialize the attributes of the class. """
         
-        self.total_number_of_haplotypes_in_reference_panel = 2*len(sam_tab)
+        if total_number_of_haplotypes!=2*len(sam_tab): 
+            raise Exception('Error: the number of diploid samples in the SAMPLE file differ from the number of haplotypes in the HAP file.')
+
+        self.total_number_of_haplotypes_in_reference_panel = total_number_of_haplotypes
         self.models_dict = models_dict
         self.hap_dict = self.build_hap_dict(obs_tab, leg_tab, hap_tab)
         self.flags, self.num_of_hap_in_ref_subpanel = self.subpanels(sam_tab)
@@ -49,16 +53,12 @@ class examine:
         panel. Then, all the haplotypes that are associated with each group are
         flagged using a binary representation marks and counted. """
         
-        differentiate = [row[2] == sam_tab[0][2] for row in sam_tab]
+        differentiate = [row[2] == sam_tab[0][2] for row in sam_tab for i in (1,2)]
         flag0 = sum(v<<i for i, v in enumerate(differentiate[::-1]))
         flag1 = flag0 ^ ((1 << self.total_number_of_haplotypes_in_reference_panel) - 1)
         flags = (flag0, flag1)
-        print(bin(flag0))
-        print(bin(flag1))
         N0 = differentiate.count(True)
         N1 = self.total_number_of_haplotypes_in_reference_panel - N0
-        print(N0)
-        print(N1)
         number_of_haplotypes_in_reference_subpanel = (N0,N1)
         return flags, number_of_haplotypes_in_reference_subpanel
     
@@ -256,7 +256,7 @@ class examine:
         return MONOSOMY, DISOMY, SPH, BPH
         
 def wrapper_of_examine_for_debugging(obs_filename,leg_filename,hap_filename,sample_filename,models_filename):
-    """ Wrapper function of the class examine. It receives an observations
+    """ Wrapper function of the class examine_Admixed. It receives an observations
     file, IMPUTE2 legend file, IMPUTE2 haplotypes file, IMPUTE2 samples file,
     and a file with four statistical models. Based on the given data it creates
     and returns an instance of the class. """
@@ -273,10 +273,6 @@ def wrapper_of_examine_for_debugging(obs_filename,leg_filename,hap_filename,samp
     hap_tab, total_number_of_haplotypes = read_impute2(hap_filename, filetype='hap')
     sam_tab  = read_impute2(sample_filename, filetype='sam')
     
-    if total_number_of_haplotypes!=2*len(sam_tab): 
-        print(total_number_of_haplotypes,2*len(sam_tab))
-        raise Exception('Error: the number of diploid samples in the SAMPLE file differ from the number of haplotypes in the HAP file.')
-
     with open(obs_filename, 'rb') as f:
         obs_tab = pickle.load(f)
         #info = pickle.load(f)
@@ -285,17 +281,17 @@ def wrapper_of_examine_for_debugging(obs_filename,leg_filename,hap_filename,samp
     with load_model(models_filename, 'rb') as f:
         models_dict = pickle.load(f)
 
-    return examine(obs_tab, leg_tab, hap_tab, sam_tab, models_dict)
+    return examine_admixed(obs_tab, leg_tab, hap_tab, sam_tab, models_dict, total_number_of_haplotypes)
 
-#if __name__ != "__main__":
-#    print('The module LIKELIHOODS_CALCULATOR was imported.')
-#else:
-#    print('The module LIKELIHOODS_CALCULATOR was invoked directly')
-#    sys.exit(0)
+if __name__ != "__main__":
+    print('The module LIKELIHOODS_CALCULATOR was imported.')
+else:
+    print('The module LIKELIHOODS_CALCULATOR was invoked directly')
+    sys.exit(0)
 
 ###############################   END OF FILE   ###############################
 
-
+"""
 
 if __name__ != "__main__":
     print("The module LIKELIHOODS_CALCULATOR was imported.")
@@ -314,37 +310,44 @@ else:
 
     alleles = tuple(A.hap_dict.keys())
 
-    frequencies = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_combo(*x,normalize=True).items()}
+    frequencies0 = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_combo(*x,group_id=0,normalize=True).items()}
+    frequencies1 = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_combo(*x,group_id=1,normalize=True).items()}
 
     likelihoods = A.likelihoods
     likelihoods2 = A.likelihoods2
     likelihoods3 = A.likelihoods3
     likelihoods4 = A.likelihoods4
 
-    x = random.samples(alleles)
+    x = random.randrange(len(alleles))
     haplotypes = (alleles[x:x+4],alleles[x+4:x+8],alleles[x+8:x+12],alleles[x+12:x+16])
 
     print('-----joint_frequencies_combo-----')    
-    print(frequencies(alleles[x+0]))
-    print(frequencies(alleles[x:x+4]))
+    print(frequencies0(alleles[x+0]))
+    print(frequencies0(alleles[x:x+4]))
+    print(frequencies1(alleles[x+0]))
+    print(frequencies1(alleles[x:x+4]))
     print('-----likelihoods4-haplotypes-----')
     print(haplotypes)
-    print(frequencies(*haplotypes))
+    print(frequencies0(*haplotypes))
+    print(frequencies1(*haplotypes))
     print(likelihoods(*haplotypes))
     print(likelihoods4(*haplotypes))
     print('-----likelihoods2-----')
-    print(alleles[:2])
-    print(frequencies(*alleles[x:x+2]))
+    print(alleles[x:x+2])
+    print(frequencies0(*alleles[x:x+2]))
+    print(frequencies1(*alleles[x:x+2]))
     print(likelihoods(*alleles[x:x+2]))
     print(likelihoods2(*alleles[x:x+2]))
     print('-----likelihoods3-----')
-    print(alleles[:3])
-    print(frequencies(*alleles[x:x+3]))
+    print(alleles[x:x+3])
+    print(frequencies0(*alleles[x:x+3]))
+    print(frequencies1(*alleles[x:x+3]))
     print(likelihoods(*alleles[x:x+3]))
     print(likelihoods3(*alleles[x:x+3]))
     print('-----likelihoods4-----')
-    print(alleles[:4])
-    print(frequencies(*alleles[x:x+4]))
+    print(alleles[x:x+4])
+    print(frequencies0(*alleles[x:x+4]))
+    print(frequencies1(*alleles[x:x+4]))
     print(likelihoods(*alleles[x:x+4]))
     print(likelihoods4(*alleles[x:x+4]))
 
@@ -352,3 +355,4 @@ else:
 
     print('Done in %.3f sec.' % ((b-a)))
 
+"""

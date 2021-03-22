@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-LIKELIHOODS_CALCULATOR
+LIKELIHOODS_CALCULATOR_HOMOGENOUES
 
-Given a reads that originated form the same genomic window, the likelihood of 
-a four scenarios, namely, monosomy, disomy, SPH and BPH is calculated.
+Given reads that originated form the same genomic window and a reference panel
+of a single population, the likelihood of observed reads under four scenarios,
+namely, monosomy, disomy, SPH and BPH is calculated.
 
 BPH (Both Parental Homologs) correspond to the presence of three unmatched
 haplotypes, while SPH (Single Parental Homolog) correspond to chromosome gains
@@ -29,18 +30,18 @@ except ModuleNotFoundError:
         """ Counts non-zero bits in positive integer. """
         return bin(x).count('1')
 
-class examine:
+class examine_homogeneous:
     """ Based on two IMPUTE2 arrays, which contain the legend and haplotypes,
     and a dictionary with statisitcal models (models_dict), it allows to
     calculate the likelihoods of observed alleles under various statistical
     models (monosomy, disomy, SPH and BPH). """
    
     
-    def __init__(self, obs_tab, leg_tab, hap_tab, number_of_haplotypes, models_dict):
+    def __init__(self, obs_tab, leg_tab, hap_tab, sam_tab, models_dict, number_of_haplotypes):
         """ Initialize the attributes of the class. """
         self.models_dict = models_dict
         self.hap_dict = self.build_hap_dict(obs_tab, leg_tab, hap_tab, number_of_haplotypes)
-        self.number_of_haplotypes_in_reference_panel = number_of_haplotypes
+        self.total_number_of_haplotypes_in_reference_panel = number_of_haplotypes
 
     def build_hap_dict(self, obs_tab, leg_tab, hap_tab, number_of_haplotypes):
         """ Returns a dictionary that lists chromosome positions of SNPs and gives
@@ -127,7 +128,7 @@ class examine:
             result[sum(hap.keys())] = popcount(reduce(and_,hap.values()))
 
         if normalize:
-            result = {k: v/self.number_of_haplotypes_in_reference_panel for k,v in result.items()}
+            result = {k: v/self.total_number_of_haplotypes_in_reference_panel for k,v in result.items()}
             
         return result
     
@@ -137,7 +138,7 @@ class examine:
         and BPH. """
         
         F = self.joint_frequencies_combo(*alleles, normalize=False)
-        N = self.number_of_haplotypes_in_reference_panel #Divide values by N to normalize the joint frequencies.
+        N = self.total_number_of_haplotypes_in_reference_panel #Divide values by N to normalize the joint frequencies.
         models = self.models_dict[len(alleles)]
 
         ### BPH ###
@@ -214,7 +215,7 @@ class examine:
         return MONOSOMY, DISOMY, SPH, BPH
         
 def wrapper_of_examine_for_debugging(obs_filename,leg_filename,hap_filename,models_filename):
-    """ Wrapper function of the class examine. It receives an observations
+    """ Wrapper function of the class examine_homogeneous. It receives an observations
     file, IMPUTE2 legend file, IMPUTE2 haplotypes file, and a file with four
     statistical models. Based on the given data it creates and returns an
     instance of the class. """
@@ -236,7 +237,7 @@ def wrapper_of_examine_for_debugging(obs_filename,leg_filename,hap_filename,mode
     with load_model(models_filename, 'rb') as f:
         models_dict = pickle.load(f)
 
-    return examine(obs_tab, leg_tab, hap_tab, number_of_haplotypes, models_dict)
+    return examine_homogeneous(obs_tab, leg_tab, hap_tab, None, models_dict, number_of_haplotypes)
 
 if __name__ != "__main__":
     print('The module LIKELIHOODS_CALCULATOR was imported.')
@@ -254,7 +255,7 @@ if __name__ != "__main__":
 else:
     print("Executed when invoked directly")
     #sys.exit(0)
-    import time
+    import time, random
     a = time.time()
     obs_filename = 'results_EUR/mixed3haploids.X0.50.HG02035B.HG00451A.HG02513A.chr21.recomb.1.00.obs.p'
     hap_filename = '../build_reference_panel/EUR_panel.hg38.BCFtools/chr21_EUR_panel.hap.gz'
@@ -272,7 +273,7 @@ else:
     likelihoods3 = A.likelihoods3
     likelihoods4 = A.likelihoods4
 
-    x = 123
+    x = random.randrange(len(alleles)) #123
     haplotypes = (alleles[x:x+4],alleles[x+4:x+8],alleles[x+8:x+12],alleles[x+12:x+16])
 
     print('-----joint_frequencies_combo-----')    
@@ -284,17 +285,17 @@ else:
     print(likelihoods(*haplotypes))
     print(likelihoods4(*haplotypes))
     print('-----likelihoods2-----')
-    print(alleles[:2])
+    print(alleles[x:x+2])
     print(frequencies(*alleles[x:x+2]))
     print(likelihoods(*alleles[x:x+2]))
     print(likelihoods2(*alleles[x:x+2]))
     print('-----likelihoods3-----')
-    print(alleles[:3])
+    print(alleles[x:x+3])
     print(frequencies(*alleles[x:x+3]))
     print(likelihoods(*alleles[x:x+3]))
     print(likelihoods3(*alleles[x:x+3]))
     print('-----likelihoods4-----')
-    print(alleles[:4])
+    print(alleles[x:x+4])
     print(frequencies(*alleles[x:x+4]))
     print(likelihoods(*alleles[x:x+4]))
     print(likelihoods4(*alleles[x:x+4]))
