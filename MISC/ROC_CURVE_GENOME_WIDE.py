@@ -58,30 +58,33 @@ def build_confidence_dict(criterias, ratio, work_dir):
     effective_ratio = tuple('BPH' if i=='transitions' else i for i in ratio)
     ###filenames = glob.glob(work_dir + '*.LLR.p')
     ###filenames = glob.glob(work_dir + f"simulated*{criterias['depth']:.3f}*LLR.p")
-    filenamesB = glob.glob(work_dir + f"simulated.{ratio[0]:s}*{criterias['depth']:.3f}*LLR.p")
-    filenamesA = glob.glob(work_dir + f"simulated.{ratio[1]:s}*{criterias['depth']:.3f}*LLR.p")
+    filenamesB = glob.glob(work_dir + f"simulated.{ratio[0]:s}*{criterias['depth']:.3f}*LLR.p*")
+    filenamesA = glob.glob(work_dir + f"simulated.{ratio[1]:s}*{criterias['depth']:.3f}*LLR.p*")
     result = {r: {} for r in ratio}
 
     buffer = {r: collections.defaultdict(dict) for r in ratio}
     for filename in filenamesA+filenamesB:
-        likelihoods, info = load_likelihoods(filename)
-        if likelihoods==None: continue
-        subinfo = {x: info.get(x,None) for x in criterias.keys()}
-        ### print(subinfo)
-        
-        scenario = info.get('scenario','')
-        if criterias==subinfo and scenario in ratio:
-            #show_info(filename,info)  
-        
-            if effective_ratio in info['statistics']['LLRs_per_genomic_window']:
-                LLRs_per_genomic_window = [*info['statistics']['LLRs_per_genomic_window'][effective_ratio].values()]
-            else:
-                i,j = effective_ratio
-                _ = {}
-                LLRs_per_genomic_window = [mean_and_var([*starmap(LLR, ((_[i], _[j]) for _['monosomy'], _['disomy'], _['SPH'], _['BPH'] in L))])
-                               for window,L in likelihoods.items()]
-                
-            buffer[scenario][info['chr_id']][filename] = LLRs_per_genomic_window    
+        try:
+            likelihoods, info = load_likelihoods(filename)
+            if likelihoods==None: continue
+            subinfo = {x: info.get(x,None) for x in criterias.keys()}
+            ### print(subinfo)
+            
+            scenario = info.get('scenario','')
+            if criterias==subinfo and scenario in ratio:
+                #show_info(filename,info)  
+            
+                if effective_ratio in info['statistics']['LLRs_per_genomic_window']:
+                    LLRs_per_genomic_window = [*info['statistics']['LLRs_per_genomic_window'][effective_ratio].values()]
+                else:
+                    i,j = effective_ratio
+                    _ = {}
+                    LLRs_per_genomic_window = [mean_and_var([*starmap(LLR, ((_[i], _[j]) for _['monosomy'], _['disomy'], _['SPH'], _['BPH'] in L))])
+                                   for window,L in likelihoods.items()]
+                    
+                buffer[scenario][info['chr_id']][filename] = LLRs_per_genomic_window    
+        except Exception as e:
+            print(e)
     
     count = {scenario: min(len(buffer[scenario][f'chr{i:d}']) for i in range(1,23)) for scenario in ratio}
         
@@ -174,7 +177,16 @@ def configuration(C):
          'min_reads': 18,
          'max_reads': 8,
          'minimal_score': 2,
+         'min_HF': 0.05},
+    
+    C3 = {'depth': 0.05,
+         'read_length': 36,
+         'window_size': 0,
+         'min_reads': 12,
+         'max_reads': 8,
+         'minimal_score': 2,
          'min_HF': 0.05}
+    
     )
 
     return result[C]
@@ -193,10 +205,19 @@ def main(RATIO,SP,matched,mixed,C):
 if __name__ == "__main__":
     proc = []
     RATIO = ('transitions','disomy')    
-    Z = [i/10 for i in range(-100000,300)] + [i/50 for i in range(-300,300)] + [i/10 for i in range(300,100000)]# Z = [i/500 for i in range(-10000,10000)]
-    for C in ('C0','C2','C1'):
+    Z = [i/10 for i in range(-100000,100000)] + [i/200 for i in range(-3500,3500)] # Z = [i/500 for i in range(-10000,10000)]
+    for C in ('C0','C1','C2'):
         for matched,mixed in (('MISMATCHED','_mixed'),('MATCHED','')):
-            for SP in ('EUR','EAS','SAS','AFR','AMR'):
+            for SP in ('EUR','EAS','SAS','AFR','AMR','AFR_EUR','EAS_SAS','SAS_EUR', 'EAS_EUR'):
+                
+                #if SP !='AFR_EUR' or C!='C2': 
+                #    continue
+                
+                #if SP =='AFR_EUR' and C=='C2':
+                #    K = 'C3'
+                #else:
+                #    K = C
+                    
                 print(RATIO,SP,matched,mixed,C)
                 ###main(RATIO,SP,matched,mixed,C,depth)
                 try:

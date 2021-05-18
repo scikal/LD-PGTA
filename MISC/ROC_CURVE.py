@@ -263,7 +263,7 @@ def main(RATIO,SP,matched,mixed,C,buckets_in_chr21):
     conf = configuration(C)
     num_of_buckets = lambda n: {'chr'+str(i): n*chr_length('chr'+str(i))//chr_length('chr21') for i in [*range(1,23)]+['X','Y']}
     Z = [i/50 for i in [*range(-1800,-300,300)]+[*range(-300,300)]+[*range(300,1800,300)]  ]
-    DATA = collect_data(criterias = conf , num_of_buckets = num_of_buckets(buckets_in_chr21), ratio = RATIO, work_dir  = f'/mybox/simulations2/results{mixed:s}_{SP:s}/')
+    DATA = collect_data(criterias = conf , num_of_buckets = num_of_buckets(buckets_in_chr21), ratio = RATIO, work_dir  = f'/mybox/simulations/results{mixed:s}_{SP:s}/')
     R = prediction_rates(B = DATA[RATIO[0]], A = DATA[RATIO[1]], positive = 'both', thresholds = Z, num_of_buckets = num_of_buckets(buckets_in_chr21))
     T = average_prediction_rates(R)
     N = {'chr'+str(i): {RATIO[0]: len(DATA[RATIO[0]]['chr'+str(i)]), RATIO[1]: len(DATA[RATIO[1]]['chr'+str(i)])} for i in [*range(1,23)]+['X','Y']}
