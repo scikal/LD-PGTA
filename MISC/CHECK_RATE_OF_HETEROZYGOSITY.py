@@ -92,13 +92,17 @@ def check_var3(hap_dict,number_of_haplotypes):
     return result
     
 if __name__=='__main__':
-    leg_filename = '../../build_reference_panel/EUR_panel.hg38.BCFtools/chr21_EUR_panel.legend.gz'
-    hap_filename = '../../build_reference_panel/EUR_panel.hg38.BCFtools/chr21_EUR_panel.hap.gz'
-    leg_tab = read_impute2(leg_filename,filetype='leg')
-    hap_tab, number_of_haplotypes = read_impute2(hap_filename,filetype='hap')
-    hap_dict = build_hap_dict(leg_tab,hap_tab,number_of_haplotypes)
-    A = check_var2(hap_dict,number_of_haplotypes)
-    B = check_var3(hap_dict,number_of_haplotypes)
+    A = dict(); B=dict();
+    for SP in ('AFR','EUR'):
+        A[SP] = dict(); B[SP] = dict();
+        for i in range(1,22):
+            leg_filename = f'../../build_reference_panel/AFR_panel.hg38.BCFtools/chr{i:d}_{SP:s}_panel.legend.gz'
+            hap_filename = f'../../build_reference_panel/AFR_panel.hg38.BCFtools/chr{i:d}_{SP:s}_panel.hap.gz'
+            leg_tab = read_impute2(leg_filename,filetype='leg')
+            hap_tab, number_of_haplotypes = read_impute2(hap_filename,filetype='hap')
+            hap_dict = build_hap_dict(leg_tab,hap_tab,number_of_haplotypes)
+            A[SP][i] = check_var2(hap_dict,number_of_haplotypes)
+            B[SP][i] = check_var3(hap_dict,number_of_haplotypes)
     #from matplotlib import pyplot
     #pyplot.scatter(A.keys(),[1/i if i else -10 for i in A.values()],s=1)
     #pyplot.scatter(B.keys(),[1/i if i else -10 for i in B.values()],s=1)
