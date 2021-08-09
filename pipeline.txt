@@ -1,74 +1,79 @@
-##### Table of Contents  
-[Sequence Alignment](#seq_alignment) \
-[Create a reference panel](#ref_panel) \
-[Build a table of observed bases at SNP positions](#obs_tab) \
-[Build a table of LLRs at genomic windows along a chromosome](#aneuploidy_test) \
-[Simulating sequences that manifest BPH and SPH scenarios](#simulate) \
-[IMPUTE2 file format for haplotype reference panels](#IMPUTE2)
+## Table of Contents  
 
-# Sequence Alignment #
+#### Tutorial
+[Sequence alignment](#seq_alignment) \
+[Construction of the reference panel](#ref_panel) \
+[Tabulation of allele observations at known SNPs](#obs_tab) \
+[Model comparison with log likelihood ratios](#aneuploidy_test)
+
+#### Additional documentation
+[Simulating various forms of trisomy](#simulate) \
+[Description of the IMPUTE2 format for reference panels](#IMPUTE2)
+
+# Sequence alignment #
 <a name="seq_alignment"/>
 
-## Convert the sequence SRR6676163 from SRA to FASTQ. ##
+## Convert the sequence SRR6676163 from SRA to FASTQ ##
+To demonstrate the use of LD-PGTA, we can obtain a trisomic sample from SRA.
 
 `wget 'https://sra-downloadb.be-md.ncbi.nlm.nih.gov/sos1/sra-pub-run-2/SRR6676163/SRR6676163.1'`\
 `mv SRR6676163.1 SRR6676163.sra`\
 `fastq-dump ./SRR6676163.sra --gzip `
 
-## Prepare a Reference Genome ##
-We create a reference genome file based on GRCh38/hg38 (UCSC release, Dec. 2013). In order to accelerate the alignment, we do not include unplaced sequences, centromeric sequences and alternates:
+## Prepare a reference genome for alignment ##
+We next prepare a reference genome file (here GRCh38/hg38; UCSC release, Dec. 2013). In order to accelerate the alignment, we do not include unplaced sequences, centromeric sequences and alternates:
 
 `wget 'ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/chromosomes/chr?.fa.gz'`\
 `wget 'ftp://hgdownload.cse.ucsc.edu/goldenPath/hg38/chromosomes/chr??.fa.gz'`\
 `gunzip *.fa.gz`\
-`cat *.fa > hg19.fa`\
+`cat *.fa > hg38.fa`\
 `rm chr*.fa`
 
-The complete GRCh38/hg38 (UCSC release, Dec. 2013) reference genome, which includes unplaced sequences, centromeric sequences and alternates, can be downloaded by:
+The complete GRCh38/hg38 (UCSC release, Dec. 2013) reference genome, which includes unplaced sequences, centromeric sequences and alternates, can be downloaded :
 
 `wget 'http://hgdownload.cse.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz'`\
 `gunzip hg38.fa.gz`
 
 ## Creating the fasta index file ##
 
-We use the faidx command in Samtools to prepare the FASTA index file. This index file gives byte offsets in the FASTA file for each contig. Thus, it allows us to compute exactly where to find a particular reference base at specific genomic coordinates in the FASTA file.
+We use the faidx command from samtools to prepare the FASTA index file. This index file provides byte offsets in the FASTA file for each contig. Thus, it allows us to compute exactly where to find a particular reference base at specific genomic coordinates in the FASTA file.
 
-`samtools faidx ref.fasta`
+`samtools faidx hg38.fa`
 
-## Create Reference Index ##
-For sequences made out of fragments shorter than 70bp we use the software bwa. The reference index is created from the genome reference by executing:
+## Prepare the reference index for BWA ##
+For reads shorter than 70 bp we use the software BWA. The reference index is created from the reference genome FASTA by executing:
 
-`bwa index -p hg19bwaidx -a bwtsw hg19.fa`
+`bwa index -p hg38bwaidx -a bwtsw hg38.fa`
 
 See [the article](https://dx.doi.org/10.1093%2Fbioinformatics%2Fbtp324) and the [documentation of the software for more details](https://github.com/lh3/bwa).
 
-For sequences made out of fragments larger than 70bp we use the software minimap2. The reference index is created from the genome reference by executing: 
+For reads larger than 70 bp we use the software minimap2. The reference index is created from the reference genome FASTA by executing:
 
 `minimap2 -x sr -d hg38.sr.mmi hg38.fa`
 
 See [the article](https://doi.org/10.1093/bioinformatics/bty191) and the [documentation of the software for more details](https://github.com/lh3/minimap2/).
 
-## Align to Reference Genome ##
-In order to align short fragments (<70bp) using bwa, we execute it with the following arguments:
+## Align to reference genome ##
+In order to align short reads (<70bp) using bwa, we execute it with the following arguments:
 
-`bwa aln -t 6 hg19bwaidx  SRR6676163.fastq.gz > SRR6676163.bwa`\
-`bwa samse hg19bwaidx SRR6676163.bwa SRR6676163.fastq.gz > SRR6676163.sam`,
+`bwa aln -t 6 hg38bwaidx  SRR6676163.fastq.gz > SRR6676163.bwa`\
+`bwa samse hg38bwaidx SRR6676163.bwa SRR6676163.fastq.gz > SRR6676163.sam`,
 
-where the option `-t 6' allows multi-threading with 6 threads.
+where the option `-t 6` allows multi-threading with 6 threads.
 
-In order to map to the reference genome fragments that their length range from 0.07kbp to 1kbp, we use minimap2  with the following arguments:
+In order to map reads ranging from 0.07 kbp to 1 kbp, we use minimap2 with the following arguments:
 
 `minimap2 -t6 -ax sr ../genome_ref_$2/minimap2/hg38.sr.mmi SRR6676163.fastq.gz > SRR6676163.sam`,
 
-where the option `-t6' allows multi-threading with 6 threads.
+where the option `-t6` allows multi-threading with 6 threads.
 
-## Convert from a SAM to a BAM format ##
+## Convert from SAM to BAM format ##
 
-SAM is a text file, while BAM is essentially GZIP compressed binary forms of the text SAM file. Thus, converting from SAM to BAM format will reduce the data size and improve performance. In addition, a lot of applications (like browser viewing) require the reads in the BAM file to be coordinate-based sorted, .i.e, the reads are ordered from “left” to “right” across the reference genome just as you’d read across a line in a book. 
+Conversion from SAM to BAM format reduces data size and improves performance. In addition, many applications (such as genome browsers) require the reads in the BAM file to be coordinate-based sorted, i.e., the reads are ordered from “left” to “right” across the reference genome just as you would read across a line in a book. 
 
 `samtools view -bS -F 4 SRR6676163.sam | samtools sort -@ 6 -o SRR6676163.sorted.bam -`
 
-The option `-F 4` filters out unmapped reads , while `-@ 6` allows samtools to use up to 6 threads.
+The option `-F 4` filters out unmapped reads, while `-@ 6` allows `samtools` to use up to 6 threads.
 
 Next, we create an index from the BAM file with the samtools index subcommand:
 
@@ -76,8 +81,9 @@ Next, we create an index from the BAM file with the samtools index subcommand:
 
 Source: http://bioinformatics-core-shared-training.github.io/cruk-bioinf-sschool/Day1/Sequence%20Alignment_July2015_ShamithSamarajiwa.pdf and http://genomeintelligence.org/?p=1486
 
-# Create a reference panel #
+# Construction of the reference panel #
 <a name="ref_panel"/>
+As described in our manuscript, LD-PGTA overcomes the sparse nature of low-coverage data by using information about allele frequencies and haplotype structure as measured in a population reference panel. Here we demonstrate the construction of such a reference panel using data from the 1000 Genomes Project.
 
 ## Download VCF files from the 1000 Genome Project Phase 3 ##
 
@@ -92,10 +98,10 @@ This call set is also available from:
 Reference: [Variant calling on the GRCh38 assembly with the data from phase three of the 1000 Genomes Project](https://wellcomeopenresearch.org/articles/4-50/v2)
 
 ## Generate list of individuals to include in the creation of the reference panel ##
-Create a file containing a list of individuals to include in subsequent analysis. Each individual ID (as defined in the VCF headerline) should be included on a separate line. In order to generate such a list for the 1000 genome project phase 1\3 visit https://www.internationalgenome.org/data-portal/sample. 
+Create a file containing a list of individuals to include in subsequent analysis. Each individual ID (as defined in the VCF header line) should be included on a separate line. In order to generate such a list for the 1000 genome project phase 1\3 visit https://www.internationalgenome.org/data-portal/sample.
 
 ## Generate a reference panel ##
-Here we create a reference panel using BCFtools.  First, the reference panel is stored in a BCF format:
+Here we create a reference panel using bcftools.  First, the reference panel VCF is converted to BCF format:
 
 `bcftools view \`\
 `ALL.chr21.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz \`\
@@ -117,9 +123,9 @@ The arguments that were used:
 
 `--min-alleles 2 --max-alleles 2` _Select only biallelic SNPs, by selecting sites with (at least and at most) two alleles listed in REF and ALT columns._
 
-`--min-ac 1:minor` _Select only SNPs with a minor allele count that reach the threshold._
+`--min-ac 1:minor` _Select only SNPs with a minor allele count that reaches a defined threshold._
 
-`--phased --exclude 'AN!=2*N_SAMPLES'` _An IMPUTE reference-panel format requires phased data and bi-allelic sites. In order to make sure that no data is missing, sites that total number of alleles across all samples is not equal to twice the number of samples are excluded._
+`--phased --exclude 'AN!=2*N_SAMPLES'` _An IMPUTE reference-panel format requires phased data and bi-allelic sites. In order to make sure that no data is missing, sites where the total number of alleles across all samples is not equal to twice the number of samples are excluded._
 
 `--output-file chr21_EUR_panel.bcf --output-type u` _Here we specify the output file name and format. We choose an uncompressed BCF in order to speed up performance by removing unnecessary compression/decompression and BCF → IMPUTE2 conversion._
 
@@ -130,14 +136,13 @@ Then, we convert from BCF to hap/legend/sample format used by IMPUTE2 and SHAPEI
 
 where `--haplegendsample prefix` _converts from BCF to hap/legend/sample format used by IMPUTE2. The columns of the .legend file are ID,POS,REF,ALT. Moreover, in order to prevent strand swaps, the program uses IDs of the form "CHROM:POS_REF_ALT". The columns of the .sample file are population, group and sex._
 
+**One important note**: the columns of sample file for population, group, and sex expected to be filled by the user. LD-PGTA uses the values in the group column to differentiate between samples that are associated to distinct super-populations, and thus providing this information is required.
 
-One caveat, the columns of sample file for population, group and sex expected to be edited by the user. LD-PGTA uses the values in group column to differentiate between samples that are associated to distinct superpopulations and thus filling this information is required.
-
-# Build a table of observed bases at SNP positions #
+# Tabulation of allele observations at known SNPs #
 <a name="obs_tab"/>
 
-The script MAKE_OBS_TAB.py gets a BAM file, which is aligned and sorted, as well as an IMPUTE2 legend file.
-Then, it builds a nested list that contains observed alleles at SNPs positions together with their chromosome position and line number in the legend file. The nested list is stored in a pickle format.
+The script `MAKE_OBS_TAB.py` uses a BAM file, which is aligned and sorted, as well as an IMPUTE2 legend file.
+It then builds a nested list that contains observed alleles at SNPs positions together with their chromosome position and line number in the legend file. The nested list is stored in a pickle format.
 
 We run the script with the following arguments and flags:
 
@@ -147,7 +152,7 @@ where the first argument is the filename of the BAM file, containing reads mappe
 
 `--fasta_filename <FILENAME>` _The faidx-indexed reference file in the FASTA format. Supplying a reference file will reduce false SNPs caused by misalignments using the Base Alignment Quality (BAQ) method described in the paper “Improving SNP discovery by base alignment quality”, Heng Li, Bioinformatics, Volume 27, Issue 8._
 
-`--handle-multiple-observations <all/first/random/skip>` _We expect to observe at most a single base per SNP. When encountering an exception the default behavior is to skip the SNP. However, a few alternative options to handle multiple observations are available: (a) take the first observed base, (b) pick randomly an observed base and (c) keep all the observed bases._
+`--handle-multiple-observations <all/first/random/skip>` _We expect to observe at most a single base per SNP. When encountering an exception, the default behavior is to skip the SNP. However, a few alternative options to handle multiple observations are available: (a) take the first observed base, (b) randomly pick an observed base and (c) keep all the observed bases._
 
 `--min-bq  <INT>` _Minimum base quaility for observations. Default value is 30._
 
@@ -158,48 +163,52 @@ where the first argument is the filename of the BAM file, containing reads mappe
 `--output-filename <FILENAME>` _Output filename. The default filename is the same as the BAM filename, but with an extension of .chr_id.obs.p ._
     
 
-* In order to use the script, the Python module Pysam (v0.15.4) must be present. Pysam is a lightweight wrapper of the htslib C-API, allowing our script to read SAM/BAM files. For more information check [ pysam-developers / pysam ](https://github.com/pysam-developers/pysam) and also [pysam: htslib interface for python](https://pysam.readthedocs.io/en/latest/index.html).
+* In order to use the script, the Python module Pysam (v0.15.4) must be installed. Pysam is a lightweight wrapper of the htslib C-API, allowing our script to read SAM/BAM files. For more information check [ pysam-developers / pysam ](https://github.com/pysam-developers/pysam) and also [pysam: htslib interface for python](https://pysam.readthedocs.io/en/latest/index.html).
 
-# Build a table of LLRs at genomic windows along a chromosome #
+# Model comparison with log likelihood ratios #
 <a name="aneuploidy_test"/>
 
-The script ANEUPLOIDY_TEST.py builds a dictionary that lists linkage disequilibrium (LD) blocks that contain at least two meaningful reads and gives the associated log-likelihood BPH/SPH ratio (LLR); BPH (Both Parental Homologs) correspond to the presence of three unmatched haplotypes, while SPH (Single Parental Homolog). In addition, the dictionary is analyzed and summary statistics are reported. The summary includes the mean LLR, the standard error, number of informative genomic windows and fraction of genomic windows with a negative LLR.
+The script `ANEUPLOIDY_TEST.py` builds a dictionary that lists linkage disequilibrium (LD) blocks that contain at least two meaningful reads and gives the associated log-likelihood BPH/SPH ratio (LLR). BPH (Both Parental Homologs) describes to the presence of three unmatched haplotypes, while SPH (Single Parental Homolog) describes the presence of two identical haplotypes, with an additional unmatched haplotype. Finally, the script analyzes the dictionary and reports summary statistics, including the mean LLR, the standard error, the number of informative genomic windows and the fraction of genomic windows with a negative LLR.
 
-We run the script with the following arguments and flags:
+As demonstration, we run the script with the following arguments and flags:
 
-`python3 ANEUPLOIDY_TEST.py SRR6676163.obs.p EUR_panel.chr21.legend EUR_panel.chr21.hap ----block-size 50000 --min-reads 2 --max-reads 18`,
+`python3 ANEUPLOIDY_TEST.py SRR6676163.obs.p EUR_panel.chr21.legend EUR_panel.chr21.hap EUR_panel.chr21.sam --window-size 0 --min-reads 6 --max-reads 4 --compress bz2`,
 
-where the first argument is the filename of a pickle file created by MAKE_OBS_TAB, containing base observations at known SNP positions. The second argument is the filename of the IMPUTE2 legend file, which lists the SNPs in our reference panel. The third required argument is the filename of the IMPUTE2 haplotype file, which lists the haplotypes in our reference panel. In addition, the following flags are supported:
+where the first argument is the filename of a pickle file created by MAKE_OBS_TAB, containing base observations at known SNP positions. The second argument is the filename of the IMPUTE2 legend file, which lists the SNPs in our reference panel. The third required argument is the filename of the IMPUTE2 haplotype file, which lists the haplotypes in our reference panel. The forth required argument is the filename of the IMPUTE2 samples file, which describes the ancestral group of the individuals. In addition, the following flags are supported:
 
-`--block-size <INT>` _Specifies the size of the genomic window. The default value is 100 kbp. When given a zero-size genomic window, it adjusts the size of the window according to the local depth coverage._
+`--window-size <INT>` _Specifies the size of the genomic window. The default value is 100 kbp. When given a zero-size genomic window, it adjusts the size of the window to include min-reads reads._
 
 `--offset <INT>` _Shifts all the genomic windows by the requested base pairs. The default value is 0._
 
-`--min-reads <INT>` _Takes into account only genomic windows with at least INT reads, admitting non-zero score. The default value is 3._
+`--min-reads <INT>` _Takes into account only genomic windows with at least INT reads, admitting non-zero score. The minimal value is 3, while the default is 6._
 
-`--max-reads <INT>` _Selects up to INT reads from each genomic windows. The default value is 16._
+`--max-reads <INT>` _Selects up to INT reads from each genomic windows in each bootstrap sampling. The minimal value is 2, while the default value is 4._
 
-`--min-HF <INT>` _Only haplotypes with a frequency between FLOAT and 1-FLOAT add to the score of a read. The default value is 0.05._
+`--min-HF <INT>` _Only haplotypes with a frequnecy between FLOAT and 1-FLOAT add to the score of a read. The default value is 0.05._
 
 `--min-score <INT>` _Consider only reads that reach the minimal score. The default value is 2._
 
 `--output-filename <FILENAME>` _The output filename. The default is the input filename with the extension ".obs.p" replaced by ".LLR.p"._
 
-* The presence of the Python module gmpy2 would accelerate performance. gmpy2 is an implementation of a standard GMP (GNU Multiple Precision Arithmetic Library) and supports arbitrary precision integers. For more information check [ gmpy2 ](https://pypi.org/project/gmpy2/) and also [gmpy2’s documentation](https://gmpy2.readthedocs.io/).
+`--compress gz/bz2/unc` _Output compressed via gzip, bzip2 or uncompressed. Default is uncompressed._
 
-# Simulating sequences that manifest BPH and SPH scenarios #
+* The presence of the Python module gmpy2 accelerates performance of this script. gmpy2 is an implementation of a standard GMP (GNU Multiple Precision Arithmetic Library) and supports arbitrary precision integers. For more information check [ gmpy2 ](https://pypi.org/project/gmpy2/) and also [gmpy2’s documentation](https://gmpy2.readthedocs.io/).
+
+# Simulating various forms of trisomy #
 <a name="simulate"/>
+
+To further demonstrate and evaluate LD-PGTA and other methods, it can be useful to simulate trisomies (as well as other ploidy configurations) with various haplotype patterns. This can be accomplished by drawing haplotypes from a reference panel such as the 1000 Genomes Project, and mixing them in defined proportions.
 
 ## Creating mixtures of haploid sequences ##
 
-The script MIX_HAPLOIDS.py simulates observed bases at known SNP positions from an aneuploid cell, based on mixtures of haploid sequences. The simulation supports various aneuploidy landscapes:
-1. Monosomy - a single copy of a chromosome pair.
+The script MIX_HAPLOIDS.py simulates observed bases at known SNP positions from an aneuploid cell, based on mixtures of haploid sequences. The simulation supports various aneuploidy configurations:
+1. Monosomy - a single copy of a chromosome.
 2. Disomy - two unmatched haplotypes.
-3. SPH (`single parental homolog') - trisomy with two matched haplotypes.
-4. BPH (`both parental homologs') - trisomy with three unmatched haplotypes.
-5. Meiotic trisomy - trisomy with recombination, charecterized by a transition between SPH to BPH.
+3. SPH (`single parental homolog') - trisomy with two identical haplotypes and one unique haplotype.
+4. BPH (`both parental homologs') - trisomy with three distinct haplotypes.
+5. Realistic meiotic-origin trisomy with recombination, characterized by a transitions between SPH to BPH tracts.
 
-We run the script with the following arguments and flags:
+We demonstrate the script with the following arguments and flags:
 
 `python3 MIX_HAPLOIDS.py HAPLOID1.obs.p HAPLOID2.obs.p HAPLOID3.obs.p --depth 0.01 --read-length 36 --scenarios monosomy,SPH,disomy,BPH`,
 
@@ -223,11 +232,11 @@ We run the script with the following arguments and flags:
 
 `python VCF2OBS.py ALL.chr21.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz chr21_EUR_panel.legend chr21 HG00097`
 
-where the first argument is the filename of a VCF file, containning phased genotypes. The second required argument is the filename of the IMPUTE2 legend file, which lists the SNPs positions. The thirds and forth arguemnts are the chromosome ID and sample ID, respectively. 
+where the first argument is the filename of a VCF file, containing phased genotypes. The second required argument is the filename of the IMPUTE2 legend file, which lists the SNPs positions. The third and forth arguments are the chromosome ID and sample ID, respectively. 
 
 ## Create haploid-like observation table using phased genotypes from IMPUTE2 files.
 
-The script IMPUTE2OBS.py simulates two observation tables of a haploid, using phased genotypes from IMPUTE2 files. Each observation table includes SNP positions, alleles from the same haplotype of a certain individual and their corresponding line number within the IMPUTE2 legend file. 
+The script IMPUTE2OBS.py simulates two observation tables of a haploid, using phased genotypes from IMPUTE2 files. Each observation table includes SNP positions, alleles from the same haplotype of a certain individual and their corresponding line number within the IMPUTE2 legend file.
 
 We run the script with the following arguments and flags:
 
@@ -236,7 +245,7 @@ We run the script with the following arguments and flags:
 where the first argument is the filename of a legend file, describing the SNPs. The second argument is the filename of the IMPUTE2 haplotypes file, which contains a table of haplotypes. The thirds argument is the filename of the IMPUTE2 samples file, which lists the individuals. The forth and fifth arguments are the chromosome ID and sample ID, respectively. 
 
 
-# IMPUTE2 file format for haplotype reference panels #
+# Description of the IMPUTE2 format for reference panels #
 <a name="IMPUTE2"/>
 
 Adopted from the documentation of SHAPEIT, https://mathgen.stats.ox.ac.uk/genetics_software/shapeit/shapeit.html#haplegsample
