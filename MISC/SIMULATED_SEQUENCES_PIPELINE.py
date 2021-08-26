@@ -144,33 +144,33 @@ def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixt
     
     for a,b in zip(A,B): make_simulated_obs_tab_IMPUTE2based(a, SPsorted[sp], chr_id, b, work_dir) 
     sim_obs_tabs = [f'{work_dir:s}{c:s}.{chr_id:s}.hg38.obs.p' for c in C]
-    filenames = MixHaploids_wrapper(*sim_obs_tabs, read_length=read_length, depth=depth, scenarios=('SPH','BPH'),
+    filenames = MixHaploids_wrapper(*sim_obs_tabs, read_length=read_length, depth=depth, scenarios=('disomy',),
                                     output_dir=work_dir, complex_admixture=complex_admixture)
-    for c in C: os.remove(f'{work_dir:s}{c:s}.{chr_id:s}.hg38.obs.p')
     print(filenames)
+    
     for f in filenames: aneuploidy_test_demo(f,chr_id,SPsorted[sp],'MODELS/MODELS16.p',
                                              min_reads,max_reads,work_dir, complex_admixture)
+
+    for c in C: os.remove(f'{work_dir:s}{c:s}.{chr_id:s}.hg38.obs.p')
     return 0
 
 
 if __name__ == "__main__":
     random.seed(a=None, version=2)
-    complex_admixture=True
+    complex_admixture=False
     depth=0.05
     ###sp='EUR_AFR'
-    chr_id='chr21'
+    #chr_id='chr21'
     read_length = 36
     min_reads,max_reads = 18,8
     
-    #for n in ([*range(1,23)]+['X']):
-    #    chr_id = 'chr' + str(n)
+    for n in ([*range(1,23)]+['X']):
+        chr_id = 'chr' + str(n)
     #    runInParallel(*([main]*12),args=(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir) )
     #main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixture)
-    for i in range(10):
-        print(i)
         for sp in ('AFR_EUR','EAS_SAS','SAS_EUR','EAS_EUR'):
-            work_dir = f"/mybox/C-simulations/results_{sp:s}" #'../results' #'results_EAS' 
-            runInParallel(*([main]*30),args=(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixture) )
+            work_dir = f"/mybox/F1-simulations/results_{sp:s}" #'../results' #'results_EAS' 
+            runInParallel(*([main]*32),args=(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixture) )
     print('DONE.')
     pass
 else:
