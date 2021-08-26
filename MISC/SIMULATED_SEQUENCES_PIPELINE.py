@@ -124,10 +124,9 @@ def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixt
     elif len(list_SP)==2 and not complex_admixture:
         B = choices(['A','B'],k=3)
         A = []
-        for p in list_SP:
+        for i,p in enumerate(random.sample(list_SP, len(list_SP)),start=1):
             INDIVIDUALS = read_ref(f"../../build_reference_panel/samples_per_panel/{p:s}_panel.txt") #EAS_panel.txt')
-            A.extend(sample(INDIVIDUALS,k=2))
-        A = sample(A,k=3)
+            A.extend(sample(INDIVIDUALS,k=i))  
     elif len(list_SP)==2 and complex_admixture:
         B = choices(['A','B'],k=6)
         A = []
