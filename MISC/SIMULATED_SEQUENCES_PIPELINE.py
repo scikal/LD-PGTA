@@ -8,14 +8,19 @@ Daniel Ariad (daniel@ariad.org)
 Dec 30, 2020
 
 """
-import time, sys, random, os, operator
+import time, sys, random, os, operator, collections
+    
 from random import sample, choices, seed
 from multiprocessing import Process
 
 sys.path.append('../')
 from MIX_HAPLOIDS import MixHaploids_wrapper
-from IMPUTE2OBS import main as simulate_IMPUTE2based
-from VCF2OBS import main as simulate_VCFbased
+from EXTRACT_GENOTYPES import extract
+
+leg_tuple = collections.namedtuple('leg_tuple', ('chr_id', 'pos', 'ref', 'alt')) #Encodes the rows of the legend table
+sam_tuple = collections.namedtuple('sam_tuple', ('sample_id', 'group1', 'group2', 'sex')) #Encodes the rows of the samples table
+obs_tuple = collections.namedtuple('obs_tuple', ('pos', 'read_id', 'base')) #Encodes the rows of the observations table
+
 
 def read_ref(filename):
     with open(filename, 'r') as data_in:
@@ -58,9 +63,9 @@ def transitions(chr_id):
 def aneuploidy_test_demo(obs_filename,chr_id,sp,model,min_reads,max_reads,output_dir,complex_admixture):
     from ANEUPLOIDY_TEST import aneuploidy_test
     args = dict(obs_filename = f'results_{sp:s}/ABC.obs.p',
-                hap_filename = f'../../build_reference_panel/{sp:s}_panel.hg38.BCFtools/{chr_id:s}_{sp:s}_panel.hap.gz',
-                leg_filename = f'../../build_reference_panel/{sp:s}_panel.hg38.BCFtools/{chr_id:s}_{sp:s}_panel.legend.gz',
-                sam_filename = f'../../build_reference_panel/samples_per_panel/{sp:s}_panel.samples',
+                hap_filename = f'../../reference_panels/{sp:s}_panel.hg38/{chr_id:s}_{sp:s}_panel.hap.gz',
+                leg_filename = f'../../reference_panels/{sp:s}_panel.hg38/{chr_id:s}_{sp:s}_panel.legend.gz',
+                samp_filename = f'../../reference_panels/{sp:s}_panel.hg38/{sp:s}_panel.samples.gz',
                 window_size = 0,
                 subsamples = 100,
                 offset = 0,
@@ -78,24 +83,14 @@ def aneuploidy_test_demo(obs_filename,chr_id,sp,model,min_reads,max_reads,output
     LLR_dict, info = aneuploidy_test(**args)
     return LLR_dict, info
 
-def make_simulated_obs_tab_VCFbased(sample_id,sp,chr_id,genotypes,output_dir):
-    """ Based on VCF2OBS """
-    bcftools_dir = '' #'../bcftools-1.10.2/bin'
-    #sample_id = 'HG00096'
-    #chr_id = 'chr21'
-    leg_filename = f'../../build_reference_panel/{sp:s}_panel.hg38.BCFtools/{chr_id:s}_{sp:s}_panel.legend.gz'
-    vcf_filename = f'../../vcf_phase3_hg38_v2/ALL.{chr_id:s}.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz'
-    #output_dir  = f'results_{sp:s}/'
-    return simulate_VCFbased(vcf_filename,leg_filename,chr_id,sample_id,bcftools_dir,genotypes=genotypes,output_dir=output_dir)
-
-def make_simulated_obs_tab_IMPUTE2based(sample_id,sp,chr_id,genotypes,output_dir):
-    """ Based on IMPUTE2OBS """
-    path = '../../build_reference_panel/'
-    #path = f'../build_reference_panel/ref_panel.{sp:s}.hg38.BCFtools/'
-    leg_filename = path + f'{sp:s}_panel.hg38.BCFtools/{chr_id:s}_{sp:s}_panel.legend.gz'
-    hap_filename = path + f'{sp:s}_panel.hg38.BCFtools/{chr_id:s}_{sp:s}_panel.hap.gz'
-    sam_filename = path + f'samples_per_panel/{sp:s}_panel.samples'
-    return simulate_IMPUTE2based(leg_filename,hap_filename,sam_filename,chr_id,sample_id,genotypes=genotypes,output_dir=output_dir)
+def simulate_haploids(sample_id,sp,chr_id,genotypes,output_dir):
+    """ Wraps the function 'extract'. """
+    path = '../../reference_panels/'
+    #path = f'../build_reference_panel/ref_panel.{sp:s}.hg38/'
+    leg_filename = path + f'{sp:s}_panel.hg38/{chr_id:s}_{sp:s}_panel.legend.gz'
+    hap_filename = path + f'{sp:s}_panel.hg38/{chr_id:s}_{sp:s}_panel.hap.gz'
+    sam_filename = path + f'{sp:s}_panel.hg38/{sp:s}_panel.samples.gz'
+    return extract(leg_filename,hap_filename,sam_filename,chr_id,sample_id,genotypes=genotypes,output_dir=output_dir)
 
 def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixture=False):
     work_dir = work_dir.rstrip('/') + '/' if len(work_dir)!=0 else ''
@@ -118,20 +113,20 @@ def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixt
     list_SP = sp.split('_')
     
     if len(list_SP)==1:
-        INDIVIDUALS = read_ref(f"../../build_reference_panel/samples_per_panel/{sp:s}_panel.txt") #EAS_panel.txt')
+        INDIVIDUALS = read_ref(f"../../reference_panels/samples_per_panel/{sp:s}_panel.txt") #EAS_panel.txt')
         A = sample(INDIVIDUALS,k=3)
         B = choices(['A','B'],k=3)
     elif len(list_SP)==2 and not complex_admixture:
         B = choices(['A','B'],k=3)
         A = []
         for i,p in enumerate(random.sample(list_SP, len(list_SP)),start=1):
-            INDIVIDUALS = read_ref(f"../../build_reference_panel/samples_per_panel/{p:s}_panel.txt") #EAS_panel.txt')
+            INDIVIDUALS = read_ref(f"../../reference_panels/samples_per_panel/{p:s}_panel.txt") #EAS_panel.txt')
             A.extend(sample(INDIVIDUALS,k=i))  
     elif len(list_SP)==2 and complex_admixture:
         B = choices(['A','B'],k=6)
         A = []
         for p in list_SP:
-            INDIVIDUALS = read_ref(f"../../build_reference_panel/samples_per_panel/{p:s}_panel.txt") #EAS_panel.txt')
+            INDIVIDUALS = read_ref(f"../../reference_panels/samples_per_panel/{p:s}_panel.txt") #EAS_panel.txt')
             A.extend(sample(INDIVIDUALS,k=3))
         A = operator.itemgetter(0,3,1,4,2,5)(A)
     else:
@@ -141,9 +136,9 @@ def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixt
     print(C)
     #####################
     
-    for a,b in zip(A,B): make_simulated_obs_tab_IMPUTE2based(a, SPsorted[sp], chr_id, b, work_dir) 
+    for a,b in zip(A,B): simulate_haploids(a, SPsorted[sp], chr_id, b, work_dir) 
     sim_obs_tabs = [f'{work_dir:s}{c:s}.{chr_id:s}.hg38.obs.p' for c in C]
-    filenames = MixHaploids_wrapper(*sim_obs_tabs, read_length=read_length, depth=depth, scenarios=('disomy',),
+    filenames = MixHaploids_wrapper(*sim_obs_tabs, read_length=read_length, depth=depth, scenarios=('disomy','SPH'),
                                     output_dir=work_dir, complex_admixture=complex_admixture)
     print(filenames)
     
@@ -157,13 +152,13 @@ def main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixt
 if __name__ == "__main__":
     random.seed(a=None, version=2)
     complex_admixture=False
-    depth=0.05
+    depth=0.1
     ###sp='EUR_AFR'
     #chr_id='chr21'
     read_length = 36
-    min_reads,max_reads = 18,8
+    min_reads,max_reads = 24,12
     
-    for n in ([*range(1,23)]+['X']):
+    for n in ([*range(16,0,-1),'X']):
         chr_id = 'chr' + str(n)
     #    runInParallel(*([main]*12),args=(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir) )
     #main(depth,sp,chr_id,read_length,min_reads,max_reads,work_dir,complex_admixture)
