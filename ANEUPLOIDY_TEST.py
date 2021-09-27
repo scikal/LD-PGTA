@@ -174,9 +174,9 @@ def iter_windows(obs_tab,combined_dict,score_dict,window_size,offset,min_reads,
 
 def pick_reads(reads_dict,score_dict,read_IDs,max_reads):
     """ Draws up to max_reads reads from a given genomic window. The reads are
-        randomly sampled without replacement to meet the assumptions of the 
+        randomly sampled without replacement to meet the assumptions of the
         statistical models."""
-        
+
     drawn_read_IDs = random.sample(read_IDs, min(len(read_IDs)-1,max_reads))
     haplotypes = tuple(reads_dict[read_ID] for read_ID in drawn_read_IDs)
     return haplotypes
