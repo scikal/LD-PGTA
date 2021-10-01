@@ -271,7 +271,6 @@ def wrapper_of_homogenoues_for_debugging(obs_filename,leg_filename,hap_filename,
 
     return homogeneous(obs_tab, leg_tab, hap_tab, None, models_dict, number_of_haplotypes)
 
-
 if __name__ != "__main__":
     print('The module HOMOGENOUES_MODELS was imported.')
 else:
