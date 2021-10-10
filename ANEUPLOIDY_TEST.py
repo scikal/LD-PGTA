@@ -183,7 +183,9 @@ def pick_reads(reads_dict,score_dict,read_IDs,max_reads):
 
 def effective_number_of_subsamples(num_of_reads,min_reads,max_reads,subsamples):
     """ Ensures that the number of requested subsamples is not larger than the
-    number of unique subsamples. """
+    number of unique subsamples. In addition, it checks that a genomic window
+    contains a minimal number of reads (min_reads) that overlap with known 
+    SNPs. """
 
     if  min_reads <= num_of_reads > max_reads:
         eff_subsamples = min(comb(num_of_reads,max_reads),subsamples)
@@ -227,7 +229,7 @@ def bootstrap(obs_tab, leg_tab, hap_tab, sam_tab, number_of_haplotypes,
         sys.stdout.write(f"\r[{'=' * (33*(k+1)//len(windows_dict)):{33}s}] {int(100*(k+1)/len(windows_dict))}%"); sys.stdout.flush()
 
         effN = effective_number_of_subsamples(len(read_IDs),min_reads,max_reads,subsamples)
-        if effN>0:
+        if effN>0: ### Ensures that the genomic windows contains enough reads for sampling.
             likelihoods[window] = tuple(examine.get_likelihoods(*pick_reads(reads_dict,score_dict,read_IDs,max_reads)) for _ in range(effN))
 
     return likelihoods, windows_dict, examine.fraction_of_matches
