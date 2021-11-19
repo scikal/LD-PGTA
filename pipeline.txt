@@ -110,9 +110,15 @@ The script `MAKE_REF_PANEL.py` creates reference panels for LD-PGTA, using phase
 
 We run the script with the following arguments and flags:
 
-`python3 MAKE_REF_PANEL.py EUR_panel.samples ALL.chr21.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz`,
+`python3 MAKE_REF_PANEL.py EUR_panel.samples ALL.chr21.shapeit2_integrated_snvindels_v2a_27022019.GRCh38.phased.vcf.gz --mask 20160622.chr1.mask.fasta.gz`,
 
-where the first argument is the IMPUTE2 SAMPLE file. The second required argument is a VCF filename that correspond to a single chromosome. 
+where the first argument is the IMPUTE2 SAMPLE file. The second required argument is a VCF filename that correspond to a single chromosome. The third argument an accessibility mask file in a gzipped FASTA format and is optional. Supplying an accessibility mask file will reduce false SNPs in regions of the genome that are less accessible to NGS methods. [GRCh38 genome accessibility masks for 1000 Genomes data](https://www.internationalgenome.org/announcements/genome-accessibility-masks/) are available from: [http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/working/20160622_genome_mask_GRCh38/](http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000_genomes_project/working/20160622_genome_mask_GRCh38/). 
+
+In addition, the following flags are supported:
+
+`--output-directory <PATH>` _The directory in which the reference panel would be created._
+
+`--force-module cyvcf2/pysam` _By deafult cyvcf2 module would be used. This allows to use pysam instead._
 
 # Tabulation of allele observations at known SNPs #
 <a name="obs_tab"/>
@@ -304,7 +310,7 @@ The next step is to convert the reference panel VCF to BCF format:
 `--exclude-types indels,mnps,ref,bnd,other \`\
 `--min-alleles 2 \`\
 `--max-alleles 2 \`\
-`--min-ac 1 \`\
+`--min-ac 1:minor \`\
 `--phased \`\
 `--exclude 'AN!=2*N_SAMPLES' \`\
 `--output-file chr21_EUR_panel.bcf \`\
