@@ -85,25 +85,30 @@ def build_obs_tab(obs_dicts, chr_id, read_length, depth, scenario, transitions):
 
     return obs_tab
 
-def build_obs_tab_complex(obs_dicts, chr_id, read_length, depth, scenario):
-    """ Mixes reads of DNA sequencing to simulate various aneuploidy landscapes in complex admixtures. """
+def build_obs_tab_distant(obs_dicts, chr_id, read_length, depth, scenario, transitions, proportions):
+    """ Mixes reads of DNA sequencing to simulate various aneuploidy landscapes in distant admixtures. """
 
     num_of_reads = number_of_reads(chr_id,read_length,depth)
     regions = 40
-    proportions = (1,1)
     obs_tab = list()
     dx, odd = divmod(read_length, 2)
 
     number_of_haplotypes = {'monosomy':1, 'disomy':2, 'BPH': 3, 'SPH': 3}
     rsize = chr_length(chr_id)//regions
+    
+    
+    rnd_SPH = lambda: sum(choices([[2,0],[0,2]], weights=proportions) + choices([[1,0],[0,1]], weights=proportions),start=[])
+    rnd_BPH = lambda: sum(choices([[1,0],[0,1]], weights=proportions, k=number_of_haplotypes[scenario]),start=[])
     if scenario=='SPH':
-        configurations = {(i*rsize,(i+1)*rsize):
-                          sum(choices([[2,0],[0,2]], weights=proportions) + choices([[1,0],[0,1]], weights=proportions),start=[])
-                              for i in range(regions)}
+        configurations = {(i*rsize,(i+1)*rsize): rnd_SPH() for i in range(regions)}
     elif scenario in {'monosomy', 'disomy', 'BPH'}:
-        configurations = {(i*rsize,(i+1)*rsize):
-                              sum(choices([[1,0],[0,1]], weights=proportions, k=number_of_haplotypes[scenario]),start=[])
+        configurations = {(i*rsize,(i+1)*rsize): rnd_BPH() for i in range(regions)}
+        
+    elif scenario=='transitions':
+        configurations = {(i*rsize,(i+1)*rsize): 
+                              rnd_BPH() if inBPHregion((i+0.5)/regions,transitions) else rnd_SPH() 
                                   for i in range(regions)}
+        
     else:
         raise Exception('error: undefined scenario.')
 
@@ -160,7 +165,7 @@ def MixHaploids(obs_filenames, read_length, depth, scenarios, **kwargs):
     list_of_transitions = kwargs.get('transitions', [])
     given_output_filename = kwargs.get('output_filename','')
     output_dir = kwargs.get('output_dir', 'results')
-    complex_admixture = kwargs.get('complex_admixture', False)
+    distant_admixture = kwargs.get('distant_admixture', [])
 
 
     obs_dicts, info_dicts = [], []
@@ -182,22 +187,20 @@ def MixHaploids(obs_filenames, read_length, depth, scenarios, **kwargs):
     cases = tuple(senarios_iter(scenarios, list_of_transitions))
 
 
-    if complex_admixture:
+    if distant_admixture:
         print('mode: distant admixture (each homolog is a mosaic of haplotypes, where each haplotype is associated with one out of two possible ancestries).')
     else:
         print('mode: non-admixed/recent-admixture (each homolog is associated with a specific ancestry).')
 
     for ind, (scenario, transitions) in enumerate(cases, start=1):
 
-        if len(obs_filenames) < number_of_required_obs_files[scenario] * (1+complex_admixture):
-            raise Exception(f'error: The {scenario:s} scenario requires at least {number_of_required_obs_files[scenario]*(1+complex_admixture):d} observation files.')
+        if len(obs_filenames) < number_of_required_obs_files[scenario] * (1+distant_admixture):
+            raise Exception(f'error: The {scenario:s} scenario requires at least {number_of_required_obs_files[scenario]*(1+distant_admixture):d} observation files.')
 
-        if complex_admixture and scenario!='transitions':
-            obs_tab = build_obs_tab_complex(obs_dicts, chr_id, read_length, depth, scenario)
-        elif complex_admixture and scenario=='transitions':
-            raise Exception('error: transitions are not supported in complex admixtures.')
-        else:
+        if distant_admixture==[]:
             obs_tab = build_obs_tab(obs_dicts, chr_id, read_length, depth, scenario, transitions)
+        else:
+            obs_tab = build_obs_tab_distant(obs_dicts, chr_id, read_length, depth, scenario, transitions, distant_admixture)
 
         sample_ids = [info_dicts[i].get('sample_id',obs_filenames[i].strip().rsplit('/',1).pop()[:-6])
                           + info_dicts[i].get('haplotype','')
@@ -210,7 +213,7 @@ def MixHaploids(obs_filenames, read_length, depth, scenarios, **kwargs):
                 'transitions': transitions,
                 'sample_ids': sample_ids,
                 'handle-multiple-observations': 'all',
-                'complex': complex_admixture}
+                'distant': distant_admixture}
 
         if given_output_filename!=None:
             fn = save_results(obs_tab,info,ind,transitions,given_output_filename,output_dir)
@@ -246,17 +249,16 @@ if __name__ == "__main__":
                         metavar='monosomy/disomy/SPH/BPH/transitions', default='disomy', choices=['monosomy','disomy','SPH','BPH','transitions'],
                         help="The simulation supports five scenarios: monosomy/disomy/SPH/BPH/transitions. Default scenario is disomy."
                              "Giving a list of scenarios, e.g. \"SPH BPH\" would create a batch of simulations.")
+    parser.add_argument('-o', '--output-filename', metavar='OUTPUT_FILENAME', type=str,
+                        help='Output filename. The default filename is a combination of both obs filenames.')
     parser.add_argument('-t', '--transitions', type=str, nargs='+', metavar='STR,FLOAT,...,FLOAT',
                         help='Relevant only for the transitions scenario. Introduces transitions between SPH and BPH along the chromosome. '
                              'The locations of the transition is determined by a fraction of chromosome length, ranging between 0 to 1. '
                              'For example a BPH-SPH-BPH transition that equally divides the chromosomes is exressed as BPH,0.333,0.666 and,'
                              'similarly, a SPH-BPH transition at the middle of the chromosome is expressed as SPH,0.5. '
                              'In addition, giving a list of cases, e.g. \"SPH,0.2 SPH,0.4 SPH,0.6\" would create a batch of three simulations. ')
-    parser.add_argument('-o', '--output-filename', metavar='OUTPUT_FILENAME', type=str,
-                        help='Output filename. The default filename is a combination of both obs filenames.')
-    parser.add_argument('-c', '--complex-admixture', dest='feature', action='store_true',
-                        help='Simulates monosomy, disomy, SPH and BPH in complex-admixtures (the transitions scenario is not supported). '
-                             'It is assumed that probability to draw a haplotype from one of the populations is 1/2. '
+    parser.add_argument('-c', '--distant-admixture', metavar='FLOAT FLOAT', nargs='+', default=[],
+                        help='Assume a distant admixture with a certain ancestry proportion, e.g, AFR 0.8 EUR 0.2. '
                              'In addition, the order of observation tables that are given as arguments is important; '
                              'Odd positions are associated with population 1, while even positions with population 2. '
                              'For example, in order to simulate a SPH case the observation tables should be given '
