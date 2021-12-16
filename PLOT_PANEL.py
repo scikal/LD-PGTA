@@ -420,4 +420,3 @@ for identifier in identifiers:
             wrap_panel_plot(identifier,pairs=(('BPH','SPH'),),save=identifier,work_dir=work_dir, num_of_buckets_in_chr21=20)
     except Exception as e:
         print(identifier,e)
-
