@@ -260,7 +260,7 @@ if __name__ == "__main__":
     parser.add_argument('-c', '--compress', metavar='gz/bz2/unc', type=str, default='unc',  choices=['gz','bz2','unc'],
                         help='Output compressed via gzip, bzip2 or uncompressed. Default is uncompressed.')
     parser.add_argument('-o', '--scenarios', type=str, nargs=2,
-                        metavar='BPH/SPH/disomy/monosomy', default='BPH SPH', choices=['BPH','SPH','disomy','monosomy'],
+                        metavar='BPH/SPH/disomy/monosomy', default=['BPH', 'SPH'], choices=['BPH','SPH','disomy','monosomy'],
                         help="Two simulated scenarios for which a balanced ROC curve would be created. The default is \"BPH SPH\". ")
     parser.add_argument('-a', '--ancestral-makeup', metavar='STR', nargs='+',
                         help='Apply a criterion for the ancestral makeup: \n'
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     
     #print(args)
     criteria = {}
-    criteria['scenarios'] =  args['scenarios'][:2]
+    criteria['scenarios'] =  args['scenarios']
     if args['depth']!=None: criteria['depth'] = args['depth']
     if args['window_size']!=None: criteria['window_size'] = args['window_size']
     if args['min_reads']!=None: criteria['min_reads'] = args['min_reads']
