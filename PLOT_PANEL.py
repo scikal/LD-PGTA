@@ -548,7 +548,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', '--bin-size', type=int, metavar='INT', default=4000000,
                         help='The bin size in which the chromosome is divided. The default value is 4,000,000 bp.')
     parser.add_argument('-z', '--z-score', type=int, metavar='INT', default=1.96,
-                        help='The z-score value for the confidence intervals. The default value is 1.96, which corresponds to confidence level of 95\%.')
+                        help='The z-score value for the confidence intervals. The default value is 1.96, which corresponds to confidence level of 95%%.')
 
     kwargs = vars(parser.parse_args())
     kwargs['pairs'] = [j.split(',') for j in kwargs.get('pairs','')]
