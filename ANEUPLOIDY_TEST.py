@@ -478,7 +478,7 @@ if __name__ == "__main__":
                         help='Output compressed via gzip, bzip2 or uncompressed. Default is uncompressed.')
     args = vars(parser.parse_args())
 
-    strings_even = all(i.isalpha() for i in args['ancestral_makeup'][0::2])
+    strings_even = all(i.isalnum() for i in args['ancestral_makeup'][0::2])
     strings_odd = all(i.isalpha() for i in args['ancestral_makeup'][1::2])
     floats_odd = all(i.replace('.','',1).isdigit() for i in args['ancestral_makeup'][1::2])
     if strings_even and strings_odd and len(args['ancestral_makeup']) in (1,2):
