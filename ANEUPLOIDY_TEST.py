@@ -22,7 +22,7 @@ from DISTANT_ADMIXTURE_MODELS import distant_admixture
 
 from itertools import product
 from functools import reduce
-from operator import and_, attrgetter
+from operator import and_, itemgetter, attrgetter
 from statistics import mean, variance, pstdev
 from math import comb, log
 
@@ -428,7 +428,9 @@ def aneuploidy_test(obs_filename,leg_filename,hap_filename,
 
     return likelihoods, info
 
-if platform.python_implementation()=='PyPy':
+if hasattr(int, "bit_count"):
+    popcount = int.bit_count
+elif platform.python_implementation()=='PyPy':
     popcount = popcount_lk()
 else:
     try:

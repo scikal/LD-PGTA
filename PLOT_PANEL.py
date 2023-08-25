@@ -9,7 +9,7 @@ May 20, 2020
 """
 
 import pickle, bz2, gzip, collections, math
-from statistics import mean, variance
+from statistics import mean, variance, median
 from math import log
 from operator import attrgetter, itemgetter
 from itertools import accumulate
@@ -40,12 +40,26 @@ def mean_and_std_of_mean_of_rnd_var(A):
     if type(A)==dict:
         A = tuple(tuple(i) for i in A.values()) 
     
-    M, N = len(A), len(A[0]) ### N is the number of random variables, while M is the number of samples.
+    M, N = len(A), len(A[0]) ### M is the number of random variables, while N is the number of samples.
     mu = sum(sum(likelihoods_in_window) for likelihoods_in_window in A) / N
     arg = ((sum(sampled_likelihoods) - mu)**2 for sampled_likelihoods in zip(*A))
     std = (sum(arg) / (N - 1))**.5 / M
     mean = mu / M
     return mean, std
+
+def median_and_mad_of_mean_of_rnd_var(A):
+    """ Calculates the median of GW's mean and median absolute deviation of the GW's mean.
+        Each row of A corresponds to a random variable/genomic window, while each column 
+        corresponds to a different observation/sample. """
+    if type(A)==dict:
+        A = tuple(tuple(i) for i in A.values()) 
+    
+    M, N = len(A), len(A[0]) ### M is the number of random variables, while N is the number of samples.
+    m = median(sum(sampled_likelihoods) for sampled_likelihoods in zip(*A))
+    mad = median(abs(sum(sampled_likelihoods) - m) for sampled_likelihoods in zip(*A)) 
+    mu = m / M
+    adjust_mad =  mad / ( 0.6744897501960817 * M) 
+    return mu, adjust_mad
 
 def LLR(y,x):
     """ Calculates the logarithm of y over x and deals with edge cases. """
@@ -135,6 +149,7 @@ def binning(LLRs_per_window,info,num_of_bins):
     for C in bins.values():
         if C:
             mean, std = mean_and_std_of_mean_of_rnd_var(LLR_matrix[C[0]:C[1]])
+            #####mean, std = median_and_mad_of_mean_of_rnd_var(LLR_matrix[C[0]:C[1]])
         else:
             mean, std = None, None
         

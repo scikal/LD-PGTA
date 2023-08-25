@@ -349,7 +349,54 @@ def wrapper_of_distant_admixture_for_debugging(obs_filename,leg_filename,hap_fil
     ###return obs_tab, leg_tab, hap_tab_per_group, number_of_haplotypes_per_group, admixture, models_dict
     return distant_admixture(obs_tab, leg_tab, hap_tab_per_group, number_of_haplotypes_per_group, models_dict, admixture)
 
-if platform.python_implementation()=='PyPy':
+def unit_test():
+    """ Check that the allele joint-frequencies and hypothesis likelihoods 
+    calculated by the general functions, which can consume an arbitrary number 
+    of reads, produce the same results as the special functions that consume 
+    a fixed number of reads. """
+    
+    import random, time
+    
+    t0 = time.time()
+    obs_filename = 'test/test.obs.p'
+    hap_filename = 'test/test.hap.p'
+    leg_filename = 'test/test.leg.p'
+    models_filename = 'MODELS/MODELS12.p'
+
+    admixture = {'group0': 0.5, 'group1': 0.5}
+     
+    A = wrapper_of_distant_admixture_for_debugging(obs_filename,leg_filename,hap_filename,models_filename,admixture)
+     
+    alleles = tuple(A.hap_dict_per_group['group0'].keys())
+     
+    frequencies = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_combo(*x).items()}
+    frequencies_redundant = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_redundant(*x).items()}
+     
+    are_equivalent = lambda x,y: all(abs(i-j)<1e-12 for i,j in zip(x,y)) and len(x)==len(y)
+  
+    random.seed(a=2022, version=2)
+    x = random.randrange(len(alleles)-16)
+    haplotypes = (alleles[x:x+2],alleles[x+2:x+4],alleles[x+4:x+6],alleles[x+6:x+8])
+     
+    assert are_equivalent(frequencies(alleles[x+0:x+1]).values(), frequencies_redundant(alleles[x+0:x+1]).values())
+    assert are_equivalent(frequencies(alleles[x:x+4]).values(), frequencies_redundant(alleles[x:x+4]).values())
+    assert are_equivalent(frequencies(haplotypes).values(), frequencies_redundant(haplotypes).values())
+    assert are_equivalent(A.likelihoods(haplotypes), A.likelihoods4(haplotypes))
+    assert are_equivalent(frequencies(alleles[x:x+2]).values(), frequencies_redundant(alleles[x:x+2]).values())
+    assert are_equivalent(A.likelihoods(alleles[x:x+2]), A.likelihoods2(alleles[x:x+2]))
+    assert are_equivalent(frequencies(alleles[x:x+3]).values(), frequencies_redundant(alleles[x:x+3]).values())
+    assert are_equivalent(A.likelihoods(alleles[x:x+3]), A.likelihoods3(alleles[x:x+3]))
+    assert are_equivalent(frequencies(alleles[x:x+3]).values(), frequencies_redundant(alleles[x:x+3]).values())
+    assert are_equivalent(A.likelihoods(alleles[x:x+4]), A.likelihoods4(alleles[x:x+4]))
+    
+    t1 = time.time()
+    print('Passed all tests in %.3f sec.' % ((t1-t0)))
+    return 0
+
+
+if hasattr(int, "bit_count"):
+    popcount = int.bit_count
+elif platform.python_implementation()=='PyPy':
     popcount = popcount_lk()
 else:
     try:
@@ -365,81 +412,3 @@ else:
     sys.exit(0)
 
 ###############################   END OF FILE   ###############################
-"""
-
-
-if __name__ != "__main__":
-    print("The module DISTANT_ADMIXTURE_MODELS was imported.")
-else:
-    print('The module DISTANT_ADMIXTURE_MODELS was invoked directly')
-    #sys.exit(0)
-    import time, random
-    t0 = time.time()
-    obs_filename = 'test/test.obs.p'
-    hap_filename = 'test/test.hap.p'
-    leg_filename = 'test/test.leg.p'
-    models_filename = 'MODELS/MODELS16.p'
-    admixture = {'group0': 0.5, 'group1': 0.5}
-
-    A = wrapper_of_distant_admixture_for_debugging(obs_filename,leg_filename,hap_filename,models_filename,admixture)
-
-    alleles = tuple(A.hap_dict_per_group['group0'].keys())
-
-    frequencies = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_combo(*x).items()}
-    frequencies_redundant = lambda *x: {bin(a)[2:]:b for a,b in A.joint_frequencies_redundant(*x).items()}
-
-
-    likelihoods = A.likelihoods
-    likelihoods2 = A.likelihoods2
-    likelihoods3 = A.likelihoods3
-    likelihoods4 = A.likelihoods4
-
-    random.seed(a=2022, version=2)
-    x = random.randrange(len(alleles)-16)
-    haplotypes = (alleles[x:x+4],alleles[x+4:x+8],alleles[x+8:x+12],alleles[x+12:x+16])
-
-    print('-----joint_frequencies_combo-----')
-    print(frequencies(alleles[x+0:x+1]))
-    print(frequencies_redundant(alleles[x+0:x+1]))
-
-    print(frequencies(alleles[x:x+4]))
-    print(frequencies_redundant(alleles[x:x+4]))
-
-    print('-----likelihoods4-haplotypes-----')
-    print(haplotypes)
-
-    print(frequencies(haplotypes))
-    print(frequencies_redundant(haplotypes))
-
-    print(likelihoods(haplotypes))
-    print(likelihoods4(haplotypes))
-    print('-----likelihoods2-----')
-    print(alleles[x:x+2])
-
-    print(frequencies(alleles[x:x+2]))
-    print(frequencies_redundant(alleles[x:x+2]))
-
-    print(likelihoods(alleles[x:x+2]))
-    print(likelihoods2(alleles[x:x+2]))
-    print('-----likelihoods3-----')
-    print(alleles[x:x+3])
-
-    print(frequencies(alleles[x:x+3]))
-    print(frequencies_redundant(alleles[x:x+3]))
-
-    print(likelihoods(alleles[x:x+3]))
-    print(likelihoods3(alleles[x:x+3]))
-    print('-----likelihoods4-----')
-    print(alleles[x:x+4])
-
-    print(frequencies(alleles[x:x+3]))
-    print(frequencies_redundant(alleles[x:x+3]))
-
-    print(likelihoods(alleles[x:x+4]))
-    print(likelihoods4(alleles[x:x+4]))
-
-    t1 = time.time()
-
-    print('Done in %.3f sec.' % ((t1-t0)))
-
-"""

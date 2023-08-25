@@ -56,10 +56,10 @@ def print_haplotypes(hap_tab,number_of_haplotypes):
 
 if __name__=="__main__":
     
-    leg_tab = generate_legned(SNPs=100000)
-    hap_tab, number_of_haplotypes = generate_haplotype(groups=1,SNPs=100000,number_of_haplotypes=50)  ### number of haplotypes must be even, because diploids are simulated.
+    leg_tab = generate_legned(SNPs=10000)
+    hap_tab, number_of_haplotypes = generate_haplotype(groups=2,SNPs=10000,number_of_haplotypes=50)  ### number of haplotypes must be even, because diploids are simulated.
     obs_tab = generate_obs(leg_tab,alleles_per_read=1)
-    sam_tab = generate_sam(groups=1,number_of_haplotypes=50)
+    sam_tab = generate_sam(groups=2,number_of_haplotypes=50)
         
     if not os.path.exists('test'): os.makedirs('test')
     
