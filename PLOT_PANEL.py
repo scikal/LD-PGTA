@@ -20,12 +20,14 @@ likelihoods_tuple = collections.namedtuple('likelihoods_tuple', ('monosomy', 'di
 def chr_length(chr_id):
     """ Return the chromosome length for a given chromosome, based on the reference genome hg38.""" 
     #The data of chromosome length was taken from https://www.ncbi.nlm.nih.gov/grc/human/data?asm=GRCh38
+    
     length_dict = {'chr1': 248956422, 'chr2': 242193529, 'chr3': 198295559, 'chr4': 190214555, 'chr5': 181538259,
                   'chr6': 170805979, 'chr7': 159345973, 'chr8': 145138636, 'chr9': 138394717, 'chr10': 133797422,
                   'chr11': 135086622, 'chr12': 133275309, 'chr13': 114364328, 'chr14': 107043718, 'chr15': 101991189,
                   'chr16': 90338345, 'chr17':  83257441, 'chr18': 80373285, 'chr19': 58617616, 'chr20': 64444167,
                   'chr21': 46709983, 'chr22': 50818468, 'chrX': 156040895, 'chrY': 57227415}
-    return length_dict[chr_id]
+        
+    return length_dict[f'chr{chr_id:s}' if chr_id.isdigit() else chr_id]
 
 def mean_and_var(x):
     """ Calculates the mean and variance. """
@@ -291,7 +293,7 @@ def panel_plot(DATA,**kwargs):
     
     
     import matplotlib.pyplot as plt
-    num_of_bins = {'chr'+str(i): chr_length('chr'+str(i))//bin_size for i in [*range(1,23)]+['X','Y']}
+    num_of_bins = {info['chr_id']: chr_length(info['chr_id'])//bin_size for (likelihoods,info) in DATA.values()}
 
     colors = {frozenset(('BPH','disomy')):(177/255,122/255,162/255),
               frozenset(('disomy','SPH')):(242/255,142/255,44/255),
@@ -424,7 +426,7 @@ def single_plot(likelihoods,info,**kwargs):
         mpl.use('Qt5Agg')
     
     
-    num_of_bins = {'chr'+str(i): chr_length('chr'+str(i))//bin_size for i in [*range(1,23)]+['X','Y']}
+    num_of_bins = {info['chr_id']: chr_length(info['chr_id'])//bin_size}
 
     
     fs = 24 * scale
@@ -519,8 +521,8 @@ def wrap_panel_plot_for_single_indv(identifier, **kwargs):
     for i in [*range(1,23)]+['X']:
         llr_filename = kwargs.get('work_dir','.').rstrip('/') + '/' + f'{identifier:s}.chr{str(i):s}.LLR.p.bz2'
         likelihoods,info = load_likelihoods(llr_filename) 
-        DATA[f"{info['chr_id'].replace('chr', 'Chromosome '):s}, {info['depth']:.2f}x"] = (likelihoods,info)
-        show_info(llr_filename,info,kwargs['pairs'])
+        DATA[f"{info['chr_id'].replace('chr', 'Chromosome '):s}, {info['depth']:.2f}x"] = (likelihoods, info)
+        show_info(llr_filename, info, kwargs.get('pairs', (('BPH','SPH'),)))
         kwargs['title'] = identifier
     panel_plot(DATA,**kwargs)
     
@@ -540,15 +542,15 @@ def wrap_panel_plot_many_cases(filenames, **kwargs):
             identifer = llr_filename[:9].rsplit('/',1).pop()
         else:
             identifer = llr_filename.rsplit('/',1).pop()
-        DATA[identifer]=(likelihoods,info)
-        show_info(llr_filename,info,kwargs['pairs'])
+        DATA[identifer]=(likelihoods, info)
+        show_info(llr_filename, info, kwargs.get('pairs', (('BPH','SPH'),)))
     panel_plot(DATA, **kwargs)
     return 0
 
 def wrap_single_plot(llr_filename, **kwargs):
     """ Wraps the function single_plot. """
     likelihoods,info = load_likelihoods(llr_filename)
-    show_info(llr_filename,info,kwargs['pairs'])
+    show_info(llr_filename, info, kwargs.get('pairs', (('BPH','SPH'),)))
     single_plot(likelihoods, info, **kwargs)
     return 0
 
